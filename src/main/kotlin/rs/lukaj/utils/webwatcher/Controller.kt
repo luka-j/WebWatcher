@@ -18,6 +18,4 @@ class Controller {
         val watcher = Executor.watchers[name] ?: return ResponseEntity.notFound().build()
         return ResponseEntity.ok(watcher.getStateAt(time))
     }
-
-
 }

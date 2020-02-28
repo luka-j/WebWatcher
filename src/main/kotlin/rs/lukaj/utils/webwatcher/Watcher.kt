@@ -1,49 +1,55 @@
 package rs.lukaj.utils.webwatcher
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import org.jsoup.Jsoup
+import kotlin.collections.ArrayList
 
-class Watcher(var name: String, var url: String, var sensitivity : Int = 10, var period : Int = 1000*60*15) {
-    private var history = LinkedHashMap<Long, String>()
-
-    @JsonIgnore
-    private var current : String = ""
-    @JsonIgnore
-    private var currentHTML : String = ""
-    @JsonIgnore
-    var lastInvocation : Long = 0
-        private set
+class Watcher(var config : WatcherConfig, var state : WatcherState) {
 
     fun hasChanged() : Change {
-        if(System.currentTimeMillis() - lastInvocation < period) return noChange(this)
+        if(System.currentTimeMillis() - state.lastInvocation < config.period) return noChange(this)
 
-        val prev = current
-        current = scrape()
-        val changeAmount = current.distance(prev)
-        val hasChanged = changeAmount > sensitivity
-        if(hasChanged) history[lastInvocation] = currentHTML
-        return Change(this, hasChanged, changeAmount)
+        val prev = state.current
+        state.current = scrape()
+        val changeAmount = state.current.distance(prev)
+        return if(changeAmount == 0) noChange(this)
+        else {
+            state.history.add(Pair(state.lastInvocation, state.currentHTML))
+            if(changeAmount > config.sensitivity) {
+                Change(this, ChangeType.MAJOR_CHANGE, changeAmount)
+            } else {
+                Change(this, ChangeType.MINOR_CHANGE, changeAmount)
+            }
+        }
     }
 
     private fun scrape() : String {
-        val document = Jsoup.connect(url).get()
-        currentHTML = document.outerHtml()
-        lastInvocation = System.currentTimeMillis()
+        val document = Jsoup.connect(config.url).get()
+        state.currentHTML = document.outerHtml()
+        state.lastInvocation = System.currentTimeMillis()
         return document.body().text()
     }
 
-    fun copyState(from : Watcher) {
-        history = from.history
-        current = from.current
-        lastInvocation = from.lastInvocation
-    }
-
     fun getStateAt(timeMs : Long) : String {
-        var state = ""
-        for(entry in history) {
-            if(entry.key > timeMs) return state
-            state = entry.value
-        }
-        return state
+        return binarySearchTime(state.history, timeMs).second
     }
+}
+
+data class WatcherConfig(var name: String, var url: String, var sensitivity : Int = 10, var period : Int = 1000*60*15)
+
+data class WatcherState(var current : String = "", var currentHTML : String = "",
+                        var history: ArrayList<Pair<Long, String>> = ArrayList(), var lastInvocation : Long = 0)
+
+fun binarySearchTime(input: ArrayList<Pair<Long, String>>, timeToSearch: Long) : Pair<Long, String> {
+    var low = 0
+    var high = input.size-1
+    var mid = 0
+    while(low <= high) {
+        mid = (low + high)/2
+        when {
+            timeToSearch >input[mid].first   -> low = mid+1
+            timeToSearch == input[mid].first -> return input[mid]
+            timeToSearch < input[mid].first  -> high = mid-1
+        }
+    }
+    return input[mid]
 }

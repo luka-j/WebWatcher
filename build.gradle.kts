@@ -28,7 +28,8 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jsoup:jsoup:1.12.2")
-    compile("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.+")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.+")
+    implementation("com.sendgrid:sendgrid-java:4.0.1")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
