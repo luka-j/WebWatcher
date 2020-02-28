@@ -3,10 +3,11 @@ package rs.lukaj.utils.webwatcher
 import org.jsoup.Jsoup
 import kotlin.collections.ArrayList
 
+const val MS_IN_MIN = 60000
 class Watcher(var config : WatcherConfig, var state : WatcherState) {
 
     fun hasChanged() : Change {
-        if(System.currentTimeMillis() - state.lastInvocation < config.period) return noChange(this)
+        if((System.currentTimeMillis() - state.lastInvocation + 10)/MS_IN_MIN < config.period) return noChange(this)
 
         val prev = state.current
         state.current = scrape()
@@ -34,7 +35,7 @@ class Watcher(var config : WatcherConfig, var state : WatcherState) {
     }
 }
 
-data class WatcherConfig(var name: String, var url: String, var sensitivity : Int = 10, var period : Int = 1000*60*15)
+data class WatcherConfig(var name: String, var url: String, var sensitivity : Int = 10, var period : Int = 15)
 
 data class WatcherState(var current : String = "", var currentHTML : String = "",
                         var history: ArrayList<Pair<Long, String>> = ArrayList(), var lastInvocation : Long = 0)

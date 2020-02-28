@@ -53,13 +53,17 @@ object Executor {
             if(firstLoad) {
                 val states = WatcherIO.loadStates()
                 for(state in states) {
-                    (newWatchers[state.key] ?: error("Config/State not correctly paired!")).state = state.value
+                    if(newWatchers.containsKey(state.key)) {
+                        (newWatchers[state.key] ?: error("Mustn't happen")).state = state.value
+                    } else {
+                        LOG.warn("Unpaired Config/State, state id ${state.key}")
+                    }
                 }
                 firstLoad = false
             } else {
                 for (newWatcher in newWatchers) {
                     if (watchers.containsKey(newWatcher.key)) {
-                        newWatcher.value.state = watchers[newWatcher.key]?.state ?: error("Mustn't happen")
+                        newWatcher.value.state = watchers[newWatcher.key]?.state ?: error("Mustn't happen (2)")
                     }
                 }
             }
@@ -73,7 +77,7 @@ object Executor {
         if(changes.isEmpty()) return
         val changesNo = changes.size + pendingChanges.size
 
-        val majorChanges = changesToString(changes)
+        val majorChanges = changesToString(changes) //todo add previous/current links (url to /state)
         val minorChanges = changesToString(pendingChanges)
         pendingChanges.clear()
         val message = if(pendingChanges.isEmpty()) majorChanges else "$majorChanges\n\nOther minor changes: $minorChanges"
@@ -91,7 +95,7 @@ object Executor {
         LOG.error("Unexpected error occurred", e)
 
         if(System.currentTimeMillis() - lastErrorNotification > 1000 * 60 * 60) {
-            sendMail("WebWatcher error!", "Exception ocurred while scraping website! " + e.javaClass + ": " + e.message)
+            sendMail("WebWatcher error!", "Exception occurred while scraping website! " + e.javaClass + ": " + e.message)
             lastErrorNotification = System.currentTimeMillis()
         }
     }
