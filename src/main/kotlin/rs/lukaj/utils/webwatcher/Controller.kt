@@ -32,7 +32,7 @@ class Controller {
             watchers.add(WatcherConfig("Raspored form_0", base + "index.html", 8, 4))
             val decimalFormat = DecimalFormat("000")
             for(i in 1..43) {
-                watchers.add(WatcherConfig("Raspored form_$i", base + "form_" + decimalFormat.format(i) + ".html", 8, 4))
+                watchers.add(WatcherConfig("Raspored form_$i", base + "form_" + decimalFormat.format(i) + ".html", 8, 10))
             }
             return ResponseEntity.ok(watchers)
         }

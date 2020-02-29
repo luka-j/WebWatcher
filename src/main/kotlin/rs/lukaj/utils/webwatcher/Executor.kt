@@ -27,21 +27,26 @@ object Executor {
         LOG.info("Updating watchers from config")
         updateWatchers()
 
-        val changes = ArrayList<Change>()
-        LOG.info("Running watchers")
-        var hasMajorChanges = false
-        for(watcher in watchers) {
-            val change = watcher.value.hasChanged()
-            if(change.changeType == ChangeType.MAJOR_CHANGE) {
-                changes.add(change)
-                hasMajorChanges = true
-            } else if(change.changeType == ChangeType.MINOR_CHANGE) {
-                LOG.info("Adding a minor change to pending queue - $change")
-                pendingChanges.add(change)
+        try {
+            val changes = ArrayList<Change>()
+            LOG.info("Running watchers")
+            var hasMajorChanges = false
+            for (watcher in watchers) {
+                val change = watcher.value.hasChanged()
+                if (change.changeType == ChangeType.MAJOR_CHANGE) {
+                    changes.add(change)
+                    hasMajorChanges = true
+                } else if (change.changeType == ChangeType.MINOR_CHANGE) {
+                    LOG.info("Adding a minor change to pending queue - $change")
+                    pendingChanges.add(change)
+                }
             }
+            if (hasMajorChanges) handleChanges(changes)
+            LOG.info("Finished running watchers and notifications sent")
+        } catch(e: Exception) {
+            LOG.error("Exception occurred while scraping", e)
+            notifyError(e)
         }
-        if(hasMajorChanges) handleChanges(changes)
-        LOG.info("Finished running watchers and notifications sent")
     }
 
     @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 1000 * 65)
