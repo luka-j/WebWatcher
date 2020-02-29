@@ -16,10 +16,25 @@ class Watcher(var config : WatcherConfig, var state : WatcherState) {
         else {
             state.history.add(Pair(state.lastInvocation, state.currentHTML))
             if(changeAmount > config.sensitivity) {
-                Change(this, ChangeType.MAJOR_CHANGE, changeAmount)
+                Change(this, ChangeType.MAJOR_CHANGE, changeAmount, lastChangeTime(), currentChangeTime())
             } else {
-                Change(this, ChangeType.MINOR_CHANGE, changeAmount)
+                Change(this, ChangeType.MINOR_CHANGE, changeAmount, lastChangeTime(), currentChangeTime())
             }
+        }
+    }
+
+    private fun lastChangeTime() : Long {
+        return when {
+            state.history.size == 1 -> state.history[0].first
+            state.history.size > 1 -> state.history[state.history.size-2].first
+            else -> error("Invalid state! No history!")
+        }
+    }
+
+    private fun currentChangeTime() : Long {
+        return when {
+            state.history.size >= 1 -> state.history[state.history.size-1].first
+            else -> error("Invalid state! No history!")
         }
     }
 

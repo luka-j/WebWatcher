@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.util.stream.Collectors
 
 private const val CONFIG_PATH = "watcherConfig.json"
 private const val STATES_PATH = "watcherStates.json"
@@ -16,7 +17,8 @@ object WatcherIO {
     fun loadConfig() : Map<String, WatcherConfig> {
         val configFile = File(CONFIG_PATH)
         LOG.info("Loading config from {}", configFile.absolutePath)
-        return mapper.readValue<Map<String, WatcherConfig>>(configFile, object : TypeReference<Map<String, WatcherConfig>>() {})
+        return mapper.readValue<List<WatcherConfig>>(configFile, object : TypeReference<List<WatcherConfig>>() {})
+                .stream().collect(Collectors.toMap({w->w.name}, {w->w}))
     }
 
     fun saveStates(states : Map<String, WatcherState>) {

@@ -10,6 +10,7 @@ import java.io.IOException
 
 const val SENDGRID_APIKEY_PROPERTY = "sendgrid.apikey"
 const val RECIPIENT_EMAIL_PROPERTY = "email.recipient"
+const val FROM_EMAIL_PROPERTY = "email.sender"
 
 private val LOG : Logger = LoggerFactory.getLogger(Executor.javaClass)
 @Component
@@ -34,7 +35,8 @@ object Executor {
             if(change.changeType == ChangeType.MAJOR_CHANGE) {
                 changes.add(change)
                 hasMajorChanges = true
-            } else {
+            } else if(change.changeType == ChangeType.MINOR_CHANGE) {
+                LOG.info("Adding a minor change to pending queue - $change")
                 pendingChanges.add(change)
             }
         }
@@ -77,33 +79,33 @@ object Executor {
         if(changes.isEmpty()) return
         val changesNo = changes.size + pendingChanges.size
 
-        val majorChanges = changesToString(changes) //todo add previous/current links (url to /state)
+        val majorChanges = changesToString(changes)
         val minorChanges = changesToString(pendingChanges)
         pendingChanges.clear()
-        val message = if(pendingChanges.isEmpty()) majorChanges else "$majorChanges\n\nOther minor changes: $minorChanges"
+        val message = if(pendingChanges.isEmpty()) majorChanges else "$majorChanges<br><br>Other minor changes: $minorChanges"
         val subject = "$changesNo website(s) changed"
-        sendMail(subject, message)
+        sendMail(subject, message, true)
     }
 
     private fun changesToString(changes : List<Change>) = changes.stream()
             .sorted { c1, c2 -> c2.changeAmount - c1.changeAmount }
             .map { ch -> ch.toString() }
-            .reduce { a, b -> a+"\n"+b}
+            .reduce { a, b -> "$a<br>$b" }
             .orElseGet { ""}
 
     private fun notifyError(e : Exception) {
         LOG.error("Unexpected error occurred", e)
 
         if(System.currentTimeMillis() - lastErrorNotification > 1000 * 60 * 60) {
-            sendMail("WebWatcher error!", "Exception occurred while scraping website! " + e.javaClass + ": " + e.message)
+            sendMail("WebWatcher error!", "Exception occurred while scraping website! " + e.javaClass + ": " + e.message, false)
             lastErrorNotification = System.currentTimeMillis()
         }
     }
 
-    private fun sendMail(subject: String, body: String) {
-        val from = Email("watcher@webwatcher.ml")
+    private fun sendMail(subject: String, body: String, isHtml : Boolean) {
+        val from = Email(System.getProperty(FROM_EMAIL_PROPERTY))
         val to = Email(System.getProperty(RECIPIENT_EMAIL_PROPERTY))
-        val content = Content("text/plain", body)
+        val content = Content(if(isHtml) "text/html" else "text/plain", body)
         val mail = Mail(from, subject, to, content)
 
         val sg = SendGrid(System.getProperty(SENDGRID_APIKEY_PROPERTY))

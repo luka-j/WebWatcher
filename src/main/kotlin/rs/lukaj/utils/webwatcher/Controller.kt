@@ -8,6 +8,8 @@ import java.text.DecimalFormat
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
+const val HOST_PROPERTY = "app.host"
+
 @Controller
 class Controller {
 
@@ -26,11 +28,11 @@ class Controller {
     fun generateConfig(@RequestParam name : String) : ResponseEntity<Any> {
         if(name == "rasporedi") {
             val base = "http://poincare.matf.bg.ac.rs/~kmiljan/raspored/sve/"
-            val watchers = HashMap<String, WatcherConfig>()
-            watchers["form_000"] = WatcherConfig("Raspored form_0", base + "index.html", 8, 4)
+            val watchers = ArrayList<WatcherConfig>()
+            watchers.add(WatcherConfig("Raspored form_0", base + "index.html", 8, 4))
             val decimalFormat = DecimalFormat("000")
             for(i in 1..43) {
-                watchers["form_$i"] = WatcherConfig("Raspored form_$i", base + "form_" + decimalFormat.format(i) + ".html", 8, 4)
+                watchers.add(WatcherConfig("Raspored form_$i", base + "form_" + decimalFormat.format(i) + ".html", 8, 4))
             }
             return ResponseEntity.ok(watchers)
         }
