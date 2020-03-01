@@ -59,7 +59,7 @@ class WatcherController {
             AdminAuth.sendAuth("pause", "/pause?time=$time")
             return ResponseEntity.ok("Sent confirmation link!")
         } else {
-            if(AdminAuth.isKeyValid("pause", key, request.remoteAddr)) {
+            if(!AdminAuth.isKeyValid("pause", key, request.remoteAddr)) {
                 lastPauseAttempt = System.currentTimeMillis()
             } else {
                 Executor.pause = time
@@ -84,7 +84,7 @@ class WatcherController {
             }
             return ResponseEntity.ok("Sent confirmation link!")
         } else {
-            if(AdminAuth.isKeyValid("silence", key, request.remoteAddr)) {
+            if(!AdminAuth.isKeyValid("silence", key, request.remoteAddr)) {
                 lastSilenceAttempt = System.currentTimeMillis()
             } else {
                 Executor.notificationsSilenced = time
