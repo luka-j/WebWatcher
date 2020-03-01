@@ -20,7 +20,7 @@ object Executor {
 
     private val pendingChanges = ArrayList<Change>()
 
-    @Scheduled(fixedRate = 1000 * 60, initialDelay = 1000)
+    @Scheduled(fixedRate = 1000 * 60, initialDelay = 1000 * 60)
     fun executeWatchers() {
         if(pause > 0) {
             pause--
@@ -51,11 +51,12 @@ object Executor {
         }
     }
 
-    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 1000 * 65)
+    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 1000 * 130)
     fun saveWatcherStates() {
         WatcherIO.saveStates(watchers.mapValues { v -> v.value.state })
     }
 
+    @Scheduled(fixedDelay = 60 * 1000 * 45)
     private fun updateWatchers() {
         try {
             val newWatchers = WatcherIO.loadConfig().mapValues { v->Watcher(v.value, WatcherState()) }
