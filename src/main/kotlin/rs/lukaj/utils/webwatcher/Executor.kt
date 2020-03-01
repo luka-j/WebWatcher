@@ -73,6 +73,7 @@ object Executor {
                 for (newWatcher in newWatchers) {
                     if (watchers.containsKey(newWatcher.key)) {
                         newWatcher.value.state = watchers[newWatcher.key]?.state ?: error("Mustn't happen (2)")
+                        newWatcher.value.config.initialDelay = watchers[newWatcher.key]?.config?.initialDelay ?: error("Mustn't happen (2)")
                     }
                 }
             }
@@ -84,6 +85,7 @@ object Executor {
 
     private var lastNotificationSent = 0L
     private val notificationQueue = ArrayList<String>()
+    var notificationsSilenced = 0
     private fun handleChanges(changes : MutableList<Change>) {
         if(changes.isEmpty()) return
         val changesNo = changes.size + pendingChanges.size
@@ -92,7 +94,7 @@ object Executor {
         val minorChanges = changesToString(pendingChanges)
         pendingChanges.clear()
         val message = if(pendingChanges.isEmpty()) majorChanges else "$majorChanges<br><br>Other minor changes: $minorChanges"
-        if(System.currentTimeMillis() - lastNotificationSent < Config.getChangeNotificationCooldown()) {
+        if(System.currentTimeMillis() - lastNotificationSent < Config.getChangeNotificationCooldown() || notificationsSilenced-- > 0) {
             notificationQueue.add(message)
         } else {
             lastNotificationSent = System.currentTimeMillis()

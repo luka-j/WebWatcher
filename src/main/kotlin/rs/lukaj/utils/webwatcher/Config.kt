@@ -17,11 +17,13 @@ object Config {
     private const val STATES_PATH_PROPERTY = "states.path"
     private const val DEFAULT_STATES_PATH = "watcherStates.json"
 
-    private const val PAUSE_EMAIL_COOLDOWN_PROPERTY = "pause.cooldown"
+    private const val PAUSE_EMAIL_COOLDOWN_PROPERTY = "email.pause.cooldown"
     private const val DEFAULT_PAUSE_EMAIL_COOLDOWN = 1000*60*60
+    private const val SILENCE_EMAIL_COOLDOWN_PROPERTY = "email.silence.cooldown"
+    private const val DEFAULT_SILENCE_EMAIL_COOLDOWN = 1000*60*15
 
-    private const val PAUSE_KEY_LENGTH_PROPERTY = "pause.key.length"
-    private const val DEFAULT_PAUSE_KEY_LENGTH = 192
+    private const val AUTH_KEY_LENGTH_PROPERTY = "auth.key.length"
+    private const val DEFAULT_AUTH_KEY_LENGTH = 192
 
     private const val ERROR_NOTIFICATION_COOLDOWN_PROPERTY = "email.error.cooldown"
     private const val DEFAULT_ERROR_NOTIFICATION_COOLDOWN = 1000*60*60
@@ -36,7 +38,9 @@ object Config {
     fun getWatcherStatesPath() : String = System.getProperty(STATES_PATH_PROPERTY, DEFAULT_STATES_PATH)
     fun getPauseEmailCooldown() : Long = System.getProperty(PAUSE_EMAIL_COOLDOWN_PROPERTY,
             DEFAULT_PAUSE_EMAIL_COOLDOWN.toString()).toLong()
-    fun getPauseKeyLength() : Int = System.getProperty(PAUSE_KEY_LENGTH_PROPERTY, DEFAULT_PAUSE_KEY_LENGTH.toString()).toInt()
+    fun getSilenceEmailCooldown() : Long = System.getProperty(SILENCE_EMAIL_COOLDOWN_PROPERTY,
+            DEFAULT_SILENCE_EMAIL_COOLDOWN.toString()).toLong()
+    fun getAuthKeyLength() : Int = System.getProperty(AUTH_KEY_LENGTH_PROPERTY, DEFAULT_AUTH_KEY_LENGTH.toString()).toInt()
     fun getErrorNotificationCooldown() : Long = System.getProperty(ERROR_NOTIFICATION_COOLDOWN_PROPERTY,
             DEFAULT_ERROR_NOTIFICATION_COOLDOWN.toString()).toLong()
     fun getChangeNotificationCooldown() : Long = System.getProperty(CHANGE_NOTIFICATION_COOLDOWN_PROPERTY,

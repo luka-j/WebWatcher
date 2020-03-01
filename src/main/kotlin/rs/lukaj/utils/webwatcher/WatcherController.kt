@@ -36,18 +36,17 @@ class WatcherController {
         if(name == "rasporedi") {
             val base = "http://poincare.matf.bg.ac.rs/~kmiljan/raspored/sve/"
             val watchers = ArrayList<WatcherConfig>()
-            watchers.add(WatcherConfig("Raspored form_0", base + "index.html", 8, 4))
+            watchers.add(WatcherConfig("Raspored form_0", base + "index.html", 8, 88))
             val decimalFormat = DecimalFormat("000")
             for(i in 1..43) {
                 watchers.add(WatcherConfig("Raspored form_$i", base + "form_" + decimalFormat.format(i) + ".html",
-                        8, 10, i%10))
+                        8, 88, (i%44)*2))
             }
             return ResponseEntity.ok(watchers)
         }
         return ResponseEntity.notFound().build()
     }
 
-    private var pauseKey : String = ""
     private var lastPauseAttempt : Long = 0
     @GetMapping("/pause")
     fun pause(@RequestParam(defaultValue = "") key : String, @RequestParam time : Int, request : HttpServletRequest) : ResponseEntity<Any> {
@@ -59,21 +58,42 @@ class WatcherController {
                 return ResponseEntity.ok("Sent confirmation link!")
             }
             lastPauseAttempt = System.currentTimeMillis()
-            pauseKey = randomString(Config.getPauseKeyLength())
-            Executor.sendMail("WebWatcher pause link", "<a href=\"${Config.getHost()}/pause?key=$pauseKey&time=$time\">Pause Watcher</a>", true)
+            AdminAuth.sendAuth("pause", "<a href=\"${Config.getHost()}/pause?key=$key&time=$time\">Pause Watcher</a>")
             return ResponseEntity.ok("Sent confirmation link!")
         } else {
-            if(key != pauseKey) {
-                pauseKey = ""
+            if(AdminAuth.checkAuth("pause", key, request.remoteAddr)) {
                 lastPauseAttempt = System.currentTimeMillis()
-                LOG.warn("Missed pause key! Attempted $key from ${request.remoteAddr}")
             } else {
-                pauseKey = ""
                 Executor.pause = time
                 lastPauseAttempt = 0
                 LOG.info("Paused Watcher for $time cycles")
             }
             return ResponseEntity.ok("Paused!")
+        }
+    }
+
+    private var lastSilenceAttempt : Long = 0
+    @GetMapping("/silence")
+    fun silence(@RequestParam(defaultValue = "") key : String, @RequestParam time : Int, request: HttpServletRequest) : ResponseEntity<Any> {
+        LOG.info("Attempting silence with key: $key from ${request.remoteAddr}")
+        //this is a bit simplistic but should be reasonably secure (and non-spammy)
+        if(StringUtils.isEmpty(key)) {
+            if (System.currentTimeMillis() - lastSilenceAttempt < Config.getSilenceEmailCooldown()) {
+                LOG.info("Hitting silence endpoint too often!")
+            } else {
+                lastSilenceAttempt = System.currentTimeMillis()
+                AdminAuth.sendAuth("silence", "<a href=\"${Config.getHost()}/silence?key=$key&time=$time\">Silence Watcher</a>")
+            }
+            return ResponseEntity.ok("Sent confirmation link!")
+        } else {
+            if(AdminAuth.checkAuth("silence", key, request.remoteAddr)) {
+                lastSilenceAttempt = System.currentTimeMillis()
+            } else {
+                Executor.notificationsSilenced = time
+                lastSilenceAttempt = 0
+                LOG.info("Silenced Watcher for $time cycles")
+            }
+            return ResponseEntity.ok("Silenced!")
         }
     }
 }
