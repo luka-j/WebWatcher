@@ -1,15 +1,21 @@
 package rs.lukaj.utils.webwatcher
 
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
+import org.springframework.util.StringUtils
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import java.text.DecimalFormat
+import javax.servlet.http.HttpServletRequest
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 const val HOST_PROPERTY = "app.host"
 
+private val LOG : Logger = LoggerFactory.getLogger(Controller::class.java)
 @Controller
 class Controller {
 
@@ -38,5 +44,35 @@ class Controller {
             return ResponseEntity.ok(watchers)
         }
         return ResponseEntity.notFound().build()
+    }
+
+    private var pauseKey : String = ""
+    private var lastPauseAttempt : Long = 0
+    @GetMapping("/pause")
+    fun pause(@RequestParam(defaultValue = "") key : String, @RequestParam time : Int, request : HttpServletRequest) : ResponseEntity<Any> {
+        LOG.info("Attempting pause with key: $key from ${request.remoteAddr}")
+        //this is a bit simplistic but should be reasonably secure (and non-spammy)
+        if(StringUtils.isEmpty(key)) {
+            if (System.currentTimeMillis() - lastPauseAttempt < 60 * 1000 * 60) {
+                LOG.warn("Hitting pause endpoint too often!")
+                return ResponseEntity.ok("Sent confirmation link!")
+            }
+            lastPauseAttempt = System.currentTimeMillis()
+            pauseKey = randomString(192)
+            Executor.sendMail("WebWatcher pause link", "<a href=\"${System.getProperty(HOST_PROPERTY)}/pause?key=$pauseKey&time=$time\">Pause Watcher</a>", true)
+            return ResponseEntity.ok("Sent confirmation link!")
+        } else {
+            if(key != pauseKey) {
+                pauseKey = ""
+                lastPauseAttempt = System.currentTimeMillis()
+                LOG.warn("Missed pause key! Attempted $key from ${request.remoteAddr}")
+            } else {
+                pauseKey = ""
+                Executor.pause = time
+                lastPauseAttempt = 0
+                LOG.info("Paused Watcher for $time cycles")
+            }
+            return ResponseEntity.ok("Paused!")
+        }
     }
 }
