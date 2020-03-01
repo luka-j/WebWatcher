@@ -8,13 +8,13 @@ object AdminAuth {
 
     private val keys = HashMap<String, String>()
 
-    fun sendAuth(action: String, body: String) {
+    fun sendAuth(action: String, path: String) {
         val key = randomString(Config.getAuthKeyLength())
         keys[action] = key
-        Executor.sendMail("WebWatcher $action link", body, true)
+        Executor.sendMail("WebWatcher $action link", "<a href=\"${Config.getHost()}$path&key=$key\">$action Watcher</a>", true)
     }
 
-    fun checkAuth(action: String, key: String, ipAddr: String) : Boolean {
+    fun isKeyValid(action: String, key: String, ipAddr: String) : Boolean {
         if(!keys.containsKey(action)) {
             LOG.warn("Attempted to authenticate for unknown action ($action)")
             return false

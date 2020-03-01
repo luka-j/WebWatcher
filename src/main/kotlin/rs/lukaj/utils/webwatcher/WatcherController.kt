@@ -2,7 +2,6 @@ package rs.lukaj.utils.webwatcher
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.util.StringUtils
@@ -11,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestParam
 import java.text.DecimalFormat
 import javax.servlet.http.HttpServletRequest
 import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
 
 
 @Controller
@@ -58,10 +56,10 @@ class WatcherController {
                 return ResponseEntity.ok("Sent confirmation link!")
             }
             lastPauseAttempt = System.currentTimeMillis()
-            AdminAuth.sendAuth("pause", "<a href=\"${Config.getHost()}/pause?key=$key&time=$time\">Pause Watcher</a>")
+            AdminAuth.sendAuth("pause", "/pause?time=$time")
             return ResponseEntity.ok("Sent confirmation link!")
         } else {
-            if(AdminAuth.checkAuth("pause", key, request.remoteAddr)) {
+            if(AdminAuth.isKeyValid("pause", key, request.remoteAddr)) {
                 lastPauseAttempt = System.currentTimeMillis()
             } else {
                 Executor.pause = time
@@ -82,11 +80,11 @@ class WatcherController {
                 LOG.info("Hitting silence endpoint too often!")
             } else {
                 lastSilenceAttempt = System.currentTimeMillis()
-                AdminAuth.sendAuth("silence", "<a href=\"${Config.getHost()}/silence?key=$key&time=$time\">Silence Watcher</a>")
+                AdminAuth.sendAuth("silence", "/silence?time=$time")
             }
             return ResponseEntity.ok("Sent confirmation link!")
         } else {
-            if(AdminAuth.checkAuth("silence", key, request.remoteAddr)) {
+            if(AdminAuth.isKeyValid("silence", key, request.remoteAddr)) {
                 lastSilenceAttempt = System.currentTimeMillis()
             } else {
                 Executor.notificationsSilenced = time
