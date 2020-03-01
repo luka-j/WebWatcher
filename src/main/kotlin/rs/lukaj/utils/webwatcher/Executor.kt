@@ -8,13 +8,11 @@ import org.springframework.stereotype.Component
 import java.io.IOException
 
 
-const val SENDGRID_APIKEY_PROPERTY = "sendgrid.apikey"
-const val RECIPIENT_EMAIL_PROPERTY = "email.recipient"
-const val FROM_EMAIL_PROPERTY = "email.sender"
-
-private val LOG : Logger = LoggerFactory.getLogger(Executor.javaClass)
 @Component
 object Executor {
+    private val LOG : Logger = LoggerFactory.getLogger(Executor.javaClass)
+
+    var pause = 0
     var watchers : Map<String, Watcher> = HashMap()
         private set
     private var firstLoad = true
@@ -24,6 +22,10 @@ object Executor {
 
     @Scheduled(fixedRate = 1000 * 60, initialDelay = 1000)
     fun executeWatchers() {
+        if(pause > 0) {
+            pause--
+            return
+        }
         LOG.info("Updating watchers from config")
         updateWatchers()
 
@@ -80,6 +82,8 @@ object Executor {
         }
     }
 
+    private var lastNotificationSent = 0L
+    private val notificationQueue = ArrayList<String>()
     private fun handleChanges(changes : MutableList<Change>) {
         if(changes.isEmpty()) return
         val changesNo = changes.size + pendingChanges.size
@@ -88,8 +92,20 @@ object Executor {
         val minorChanges = changesToString(pendingChanges)
         pendingChanges.clear()
         val message = if(pendingChanges.isEmpty()) majorChanges else "$majorChanges<br><br>Other minor changes: $minorChanges"
-        val subject = "$changesNo website(s) changed"
-        sendMail(subject, message, true)
+        if(System.currentTimeMillis() - lastNotificationSent < Config.getChangeNotificationCooldown()) {
+            notificationQueue.add(message)
+        } else {
+            lastNotificationSent = System.currentTimeMillis()
+            if(notificationQueue.isEmpty()) {
+                val subject = "$changesNo website(s) changed"
+                sendMail(subject, message, true)
+            } else {
+                val subject = "Multiple websites changed"
+                val aggregatedMessage = message + "<br><br>Aggregated notifications:<br>" + notificationQueue.joinToString("<br><br>")
+                notificationQueue.clear()
+                sendMail(subject, aggregatedMessage, true)
+            }
+        }
     }
 
     private fun changesToString(changes : List<Change>) = changes.stream()
@@ -101,19 +117,19 @@ object Executor {
     private fun notifyError(e : Exception) {
         LOG.error("Unexpected error occurred", e)
 
-        if(System.currentTimeMillis() - lastErrorNotification > 1000 * 60 * 60) {
+        if(System.currentTimeMillis() - lastErrorNotification > Config.getErrorNotificationCooldown()) {
             sendMail("WebWatcher error!", "Exception occurred while scraping website! " + e.javaClass + ": " + e.message, false)
             lastErrorNotification = System.currentTimeMillis()
         }
     }
 
-    private fun sendMail(subject: String, body: String, isHtml : Boolean) {
-        val from = Email(System.getProperty(FROM_EMAIL_PROPERTY))
-        val to = Email(System.getProperty(RECIPIENT_EMAIL_PROPERTY))
+    internal fun sendMail(subject: String, body: String, isHtml : Boolean) {
+        val from = Email(Config.getSendingEmailAddress())
+        val to = Email(Config.getReceivingEmailAddress())
         val content = Content(if(isHtml) "text/html" else "text/plain", body)
         val mail = Mail(from, subject, to, content)
 
-        val sg = SendGrid(System.getProperty(SENDGRID_APIKEY_PROPERTY))
+        val sg = SendGrid(Config.getSendgridApiKey())
         val request = Request()
         try {
             request.method = Method.POST

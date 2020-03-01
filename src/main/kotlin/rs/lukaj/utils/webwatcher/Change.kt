@@ -11,7 +11,7 @@ fun noChange(watcher : Watcher) : Change {
     return Change(watcher, ChangeType.NO_CHANGE, 0, watcher.state.history.last().first, watcher.state.history.last().first)
 }
 
-fun buildStateLink(name: String, time: Long) : String = System.getProperty(HOST_PROPERTY) + "/state?name=$name&time=$time"
+fun buildStateLink(name: String, time: Long) = Config.getHost() + "/state?name=$name&time=$time"
 
 enum class ChangeType {
     NO_CHANGE,

@@ -1,5 +1,11 @@
 package rs.lukaj.utils.webwatcher
 
+import java.util.*
+import java.util.concurrent.ThreadLocalRandom
+
+
+const val MS_IN_MIN = 60000
+
 fun levenshtein(s: String, t: String): Int {
     // degenerate cases
     if (s == t)  return 0
@@ -26,4 +32,28 @@ fun levenshtein(s: String, t: String): Int {
 
 fun String.distance(other: String) : Int {
     return levenshtein(this, other)
+}
+
+fun randomString(size: Int) : String {
+    val random: Random = ThreadLocalRandom.current()
+    val r = ByteArray(size)
+    random.nextBytes(r)
+    return Base64.getEncoder().encodeToString(r) //making it url-safe(r):
+            .replace('+', '-').replace('/', '.').replace('=', '_')
+}
+
+
+fun binarySearchTime(input: ArrayList<Pair<Long, String>>, timeToSearch: Long) : Pair<Long, String> {
+    var low = 0
+    var high = input.size-1
+    var mid = 0
+    while(low <= high) {
+        mid = (low + high)/2
+        when {
+            timeToSearch >input[mid].first   -> low = mid+1
+            timeToSearch == input[mid].first -> return input[mid]
+            timeToSearch < input[mid].first  -> high = mid-1
+        }
+    }
+    return input[mid]
 }
