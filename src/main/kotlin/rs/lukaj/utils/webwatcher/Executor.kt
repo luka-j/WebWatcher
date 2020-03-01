@@ -36,6 +36,7 @@ object Executor {
             for (watcher in watchers) {
                 val change = watcher.value.hasChanged()
                 if (change.changeType == ChangeType.MAJOR_CHANGE) {
+                    LOG.info("A major change occurred on watcher ${watcher.value.config.name}")
                     changes.add(change)
                     hasMajorChanges = true
                 } else if (change.changeType == ChangeType.MINOR_CHANGE) {
@@ -43,7 +44,7 @@ object Executor {
                     pendingChanges.add(change)
                 }
             }
-            if (hasMajorChanges) handleChanges(changes)
+            if (hasMajorChanges || notificationQueue.isNotEmpty()) handleChanges(changes)
             LOG.info("Finished running watchers and notifications sent")
         } catch(e: Exception) {
             LOG.error("Exception occurred while scraping", e)
@@ -88,7 +89,7 @@ object Executor {
     private val notificationQueue = ArrayList<String>()
     var notificationsSilenced = 0
     private fun handleChanges(changes : MutableList<Change>) {
-        if(changes.isEmpty()) return
+        if(changes.isEmpty() && notificationQueue.isEmpty()) return
         val changesNo = changes.size + pendingChanges.size
 
         val majorChanges = changesToString(changes)

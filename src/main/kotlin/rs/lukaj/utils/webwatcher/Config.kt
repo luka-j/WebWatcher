@@ -28,7 +28,7 @@ object Config {
     private const val ERROR_NOTIFICATION_COOLDOWN_PROPERTY = "email.error.cooldown"
     private const val DEFAULT_ERROR_NOTIFICATION_COOLDOWN = 1000*60*60
     private const val CHANGE_NOTIFICATION_COOLDOWN_PROPERTY = "email.change.cooldown"
-    private const val DEFAULT_CHANGE_NOTIFICATION_COOLDOWN = 1000*60*5
+    private const val DEFAULT_CHANGE_NOTIFICATION_COOLDOWN = 1000*60*15
 
     fun getHost() : String = System.getProperty(HOST_PROPERTY, DEFAULT_HOST)
     fun getSendgridApiKey() = System.getProperty(SENDGRID_APIKEY_PROPERTY)!!
