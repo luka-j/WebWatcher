@@ -44,7 +44,7 @@ object Executor {
                     pendingChanges.add(change)
                 }
             }
-            if (hasMajorChanges || notificationQueue.isNotEmpty()) handleChanges(changes)
+            if (hasMajorChanges || notificationQueue.isNotEmpty()) handleChanges(changes, false)
             LOG.info("Finished running watchers and notifications sent")
         } catch(e: Exception) {
             LOG.error("Exception occurred while scraping", e)
@@ -85,30 +85,32 @@ object Executor {
         }
     }
 
+    fun flushChanges() {
+        handleChanges(ArrayList(), true)
+    }
+
     private var lastNotificationSent = 0L
     private val notificationQueue = ArrayList<String>()
     var notificationsSilenced = 0
-    private fun handleChanges(changes : MutableList<Change>) {
-        if(changes.isEmpty() && notificationQueue.isEmpty()) return
-        val changesNo = changes.size + pendingChanges.size
+    private fun handleChanges(changes : MutableList<Change>, flush : Boolean) {
+        if(changes.isEmpty() && notificationQueue.isEmpty() && (!flush || pendingChanges.isEmpty())) return
+        val changesNo = changes.size + pendingChanges.size + notificationQueue.size
 
         val majorChanges = changesToString(changes)
         val minorChanges = changesToString(pendingChanges)
+        var message = if(pendingChanges.isEmpty()) majorChanges else "$majorChanges<br><br>Other minor changes: $minorChanges"
         pendingChanges.clear()
-        val message = if(pendingChanges.isEmpty()) majorChanges else "$majorChanges<br><br>Other minor changes: $minorChanges"
-        if(System.currentTimeMillis() - lastNotificationSent < Config.getChangeNotificationCooldown() || notificationsSilenced-- > 0) {
+        if(!flush && (System.currentTimeMillis() - lastNotificationSent < Config.getChangeNotificationCooldown() || notificationsSilenced-- > 0)) {
             notificationQueue.add(message)
         } else {
             lastNotificationSent = System.currentTimeMillis()
-            if(notificationQueue.isEmpty()) {
-                val subject = "$changesNo website(s) changed"
-                sendMail(subject, message, true)
-            } else {
-                val subject = "Multiple websites changed"
-                val aggregatedMessage = message + "<br><br>Aggregated notifications:<br>" + notificationQueue.joinToString("<br><br>")
+            val subject = "$changesNo website(s) changed"
+            if(notificationQueue.isNotEmpty()) {
+                message += "<br><br>Aggregated notifications:<br>" + notificationQueue.joinToString("<br><br>")
                 notificationQueue.clear()
-                sendMail(subject, aggregatedMessage, true)
             }
+
+            sendMail(subject, message, true)
         }
     }
 

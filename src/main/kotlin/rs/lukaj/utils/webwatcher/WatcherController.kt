@@ -94,4 +94,11 @@ class WatcherController {
             return ResponseEntity.ok("Silenced!")
         }
     }
+
+    @GetMapping("/flush")
+    fun flush() : ResponseEntity<Any> {
+        LOG.info("Requested change flush; clearing notification queue")
+        Executor.flushChanges()
+        return ResponseEntity.ok("Changes flushed!")
+    }
 }
