@@ -32,13 +32,14 @@ object WatcherStatesTable : Table() {
             WatcherStatesTable.update({name eq watcherName}) {
                 it[currentText] = text
                 it[currentHTML] = html
+                it[lastInvocation] = System.currentTimeMillis()
             }
 
             val lastState = WatcherHistoryTable.getLastState(watcherName)
             if(lastState != text) {
                 WatcherHistoryTable.insert {
                     it[WatcherHistoryTable.watcherName] = watcherName
-                    it[lastInvocation] = System.currentTimeMillis()
+                    it[time] = System.currentTimeMillis()
                     it[WatcherHistoryTable.text] = text
                     it[WatcherHistoryTable.html] = html
                 }
