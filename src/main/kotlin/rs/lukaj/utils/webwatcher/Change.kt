@@ -8,8 +8,8 @@ data class Change(val watcher : Watcher, val changeType: ChangeType, val changeA
 }
 
 fun noChange(watcher : Watcher) : Change {
-    return if(watcher.state.history.isEmpty()) Change(watcher, ChangeType.NO_CHANGE, 0, 0, 0)
-    else Change(watcher, ChangeType.NO_CHANGE, 0, watcher.state.history.last().first, watcher.state.history.last().first)
+    return if(!watcher.hasHistory()) Change(watcher, ChangeType.NO_CHANGE, 0, 0, 0)
+    else Change(watcher, ChangeType.NO_CHANGE, 0, watcher.getLastChangeTime(), watcher.getLastChangeTime())
 }
 
 fun buildStateLink(name: String, time: Long) = Config.getHost() + "/state?name=$name&time=$time"

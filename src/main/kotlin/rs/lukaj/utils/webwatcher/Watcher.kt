@@ -1,53 +1,50 @@
 package rs.lukaj.utils.webwatcher
 
 import org.jsoup.Jsoup
+import rs.lukaj.utils.webwatcher.data.WatcherHistoryTable
+import rs.lukaj.utils.webwatcher.data.WatcherStatesTable
 import kotlin.collections.ArrayList
 
-class Watcher(var config : WatcherConfig, var state : WatcherState) {
+class Watcher(var config : WatcherConfig) {
+    val state : WatcherState
+        get() {
+            return WatcherStatesTable.getState(config.name)
+        }
 
     fun hasChanged() : Change {
         if((System.currentTimeMillis() - state.lastInvocation + 10)/MS_IN_MIN < config.period) return noChange(this)
         if(config.initialDelay > 0) {config.initialDelay -= 1; return noChange(this)}
 
         val prev = state.current
-        state.current = scrape()
+        val lastChangeTime = scrape()
+        val currentChangeTime = WatcherHistoryTable.getLastChangeTime(config.name)
         val changeAmount = state.current.distance(prev)
         return if(changeAmount == 0) noChange(this)
         else {
-            state.history.add(Pair(state.lastInvocation, state.currentHTML))
             if(changeAmount > config.sensitivity) {
-                Change(this, ChangeType.MAJOR_CHANGE, changeAmount, lastChangeTime(), currentChangeTime())
+                Change(this, ChangeType.MAJOR_CHANGE, changeAmount, lastChangeTime, currentChangeTime)
             } else {
-                Change(this, ChangeType.MINOR_CHANGE, changeAmount, lastChangeTime(), currentChangeTime())
+                Change(this, ChangeType.MINOR_CHANGE, changeAmount, lastChangeTime, currentChangeTime)
             }
         }
     }
 
-    private fun lastChangeTime() : Long {
-        return when {
-            state.history.size == 1 -> state.history[0].first
-            state.history.size > 1 -> state.history[state.history.size-2].first
-            else -> error("Invalid state! No history!")
-        }
-    }
-
-    private fun currentChangeTime() : Long {
-        return when {
-            state.history.size >= 1 -> state.history[state.history.size-1].first
-            else -> error("Invalid state! No history!")
-        }
-    }
-
-    private fun scrape() : String {
+    private fun scrape() : Long {
+        val lastChange = WatcherHistoryTable.getLastChangeTime(config.name)
         val document = Jsoup.connect(config.url).get()
-        state.currentHTML = document.outerHtml()
-        state.lastInvocation = System.currentTimeMillis()
-        return document.body().text()
+        val currentHTML = document.outerHtml()
+        val currentText = document.body().text()
+        WatcherStatesTable.setCurrentState(config.name, currentText, currentHTML)
+        return lastChange
     }
 
     fun getStateAt(timeMs : Long) : String {
-        return binarySearchTime(state.history, timeMs).second
+        return WatcherHistoryTable.getStateAt(config.name, timeMs)
     }
+
+    fun hasHistory() : Boolean = WatcherHistoryTable.getLastState(config.name).isNotEmpty()
+
+    fun getLastChangeTime() : Long = WatcherHistoryTable.getLastChangeTime(config.name)
 }
 
 data class WatcherConfig(var name: String, var url: String, var sensitivity : Int = 10, var period : Int = 15, var initialDelay : Int = 0)

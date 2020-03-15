@@ -20,6 +20,7 @@ configurations {
 
 repositories {
     mavenCentral()
+    jcenter()
 }
 
 dependencies {
@@ -30,6 +31,10 @@ dependencies {
     implementation("org.jsoup:jsoup:1.12.2")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.+")
     implementation("com.sendgrid:sendgrid-java:4.0.1")
+    implementation("org.jetbrains.exposed", "exposed-core", "0.22.1")
+    implementation("org.jetbrains.exposed", "exposed-dao", "0.22.1")
+    implementation("org.jetbrains.exposed", "exposed-jdbc", "0.22.1")
+    implementation("org.postgresql", "postgresql", "42.2.11")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")

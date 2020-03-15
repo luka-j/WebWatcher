@@ -5,6 +5,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import rs.lukaj.utils.webwatcher.data.WatcherIO
 import java.io.IOException
 
 
@@ -15,19 +16,16 @@ object Executor {
     var pause = 0
     var watchers : Map<String, Watcher> = HashMap()
         private set
-    private var firstLoad = true
     private var lastErrorNotification = 0L
 
     private val pendingChanges = ArrayList<Change>()
 
-    @Scheduled(fixedRate = 1000 * 60, initialDelay = 1000 * 60)
+    @Scheduled(fixedRate = 1000 * 60, initialDelay = 1000 * 5)
     fun executeWatchers() {
         if(pause > 0) {
             pause--
             return
         }
-        LOG.info("Updating watchers from config")
-        updateWatchers()
 
         try {
             val changes = ArrayList<Change>()
@@ -52,34 +50,17 @@ object Executor {
         }
     }
 
-    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 1000 * 130)
-    fun saveWatcherStates() {
-        WatcherIO.saveStates(watchers.mapValues { v -> v.value.state })
-    }
-
-    @Scheduled(fixedDelay = 60 * 1000 * 45)
+    @Scheduled(fixedDelay = 1000 * 50)
     private fun updateWatchers() {
         try {
-            val newWatchers = WatcherIO.loadConfig().mapValues { v->Watcher(v.value, WatcherState()) }
-            if(firstLoad) {
-                val states = WatcherIO.loadStates()
-                for(state in states) {
-                    if(newWatchers.containsKey(state.key)) {
-                        (newWatchers[state.key] ?: error("Mustn't happen")).state = state.value
-                    } else {
-                        LOG.warn("Unpaired Config/State, state id ${state.key}")
-                    }
-                }
-                firstLoad = false
-            } else {
-                for (newWatcher in newWatchers) {
-                    if (watchers.containsKey(newWatcher.key)) {
-                        newWatcher.value.state = watchers[newWatcher.key]?.state ?: error("Mustn't happen (2)")
-                        newWatcher.value.config.initialDelay = watchers[newWatcher.key]?.config?.initialDelay ?: error("Mustn't happen (2)")
-                    }
+            val newWatchers = WatcherIO.loadConfig().mapValues { v->Watcher(v.value) }
+            for (newWatcher in newWatchers) {
+                if (watchers.containsKey(newWatcher.key)) {
+                    newWatcher.value.config.initialDelay = watchers[newWatcher.key]?.config?.initialDelay ?: error("Mustn't happen (2)")
                 }
             }
             watchers = newWatchers
+            LOG.info("Updated watcher configs")
         } catch (e : Exception) {
             notifyError(e)
         }

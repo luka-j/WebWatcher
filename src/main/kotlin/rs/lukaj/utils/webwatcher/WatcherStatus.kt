@@ -11,6 +11,6 @@ class WatcherStatus(watcher : Watcher) {
     init {
         name = watcher.config.name
         lastInvocation = watcher.state.lastInvocation
-        lastChange = if(watcher.state.history.isEmpty()) 0 else watcher.state.history.last().first
+        lastChange = if(!watcher.hasHistory()) 0 else watcher.getLastChangeTime()
     }
 }
