@@ -20,7 +20,7 @@ object Executor {
 
     private val pendingChanges = ArrayList<Change>()
 
-    @Scheduled(fixedRate = 1000 * 60, initialDelay = 1000 * 5)
+    @Scheduled(fixedRate = 1000 * 60, initialDelay = 1000 * 500)
     fun executeWatchers() {
         if(pause > 0) {
             pause--
@@ -110,9 +110,8 @@ object Executor {
         }
     }
 
-    internal fun sendMail(subject: String, body: String, isHtml : Boolean) {
-        val from = Email(Config.getSendingEmailAddress())
-        val to = Email(Config.getReceivingEmailAddress())
+    internal fun sendMail(subject: String, body: String, isHtml : Boolean, from: Email = Email(Config.getSendingEmailAddress()),
+                          to: Email = Email(Config.getReceivingEmailAddress())) {
         val content = Content(if(isHtml) "text/html" else "text/plain", body)
         val mail = Mail(from, subject, to, content)
 
