@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling
 class WebwatcherApplication
 
 fun main(args: Array<String>) {
-    Database.connect("jdbc:postgresql://localhost:5432/webwatcher", "org.postgresql.Driver", "luka", "appDbAdmin")
+    Database.connect("jdbc:postgresql://localhost:5432/webwatcher", "org.postgresql.Driver",
+            getProperty("app.db.user", "luka"), getProperty("app.db.pass", "appDbAdmin"))
     runApplication<WebwatcherApplication>(*args)
 }

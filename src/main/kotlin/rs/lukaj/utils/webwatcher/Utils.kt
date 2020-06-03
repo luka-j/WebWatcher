@@ -57,3 +57,12 @@ fun binarySearchTime(input: ArrayList<Pair<Long, String>>, timeToSearch: Long) :
     }
     return input[mid]
 }
+
+
+fun getProperty(name: String, default: String) : String {
+    val javaProp = System.getProperty(name)
+    if(javaProp != null) return javaProp
+    val env = System.getenv(name.toUpperCase().replace('.', '_'))
+    if(env != null) return env
+    return default
+}
